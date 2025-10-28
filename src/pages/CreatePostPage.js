@@ -11,6 +11,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 const categories = ['Academics', 'Relationships', 'Self-doubt', 'Motivation'];
 const moodEmojis = ['😊', '😢', '😰', '😔', '😤', '🤗', '💪', '🌟'];
 
+const anonymousNames = [
+  'Anonymous Butterfly', 'Anonymous Phoenix', 'Anonymous Star', 
+  'Anonymous Ocean', 'Anonymous Mountain', 'Anonymous River',
+  'Anonymous Cloud', 'Anonymous Moon', 'Anonymous Sun',
+  'Anonymous Rainbow', 'Anonymous Tree', 'Anonymous Breeze'
+];
+
+const getRandomAnonymousName = () => {
+  return anonymousNames[Math.floor(Math.random() * anonymousNames.length)];
+};
+
 const CreatePostPage = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const [content, setContent] = useState('');
@@ -33,6 +44,21 @@ const CreatePostPage = ({ user, onLogout }) => {
 
     setLoading(true);
     setTimeout(() => {
+      const existingPosts = JSON.parse(localStorage.getItem('posts') || '[]');
+      
+      const newPost = {
+        id: Date.now(),
+        content: content.trim(),
+        category,
+        mood_emoji: moodEmoji,
+        kindness_count: 0,
+        anonymous_id: getRandomAnonymousName(),
+        created_at: new Date().toISOString(),
+      };
+
+      const updatedPosts = [newPost, ...existingPosts];
+      localStorage.setItem('posts', JSON.stringify(updatedPosts));
+      
       toast.success('Post shared successfully!');
       navigate('/feed');
       setLoading(false);

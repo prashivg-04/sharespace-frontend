@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { Button } from '../components/ui/button';
@@ -10,7 +10,7 @@ import { Heart, MessageCircle, Plus, Filter } from 'lucide-react';
 
 const categories = ['All', 'Academics', 'Relationships', 'Self-doubt', 'Motivation'];
 
-const mockPosts = [
+const defaultPosts = [
   {
     id: 1,
     content: 'Feeling stressed about upcoming exams but trying to stay positive. Anyone else in the same boat?',
@@ -33,21 +33,38 @@ const mockPosts = [
 
 const FeedPage = ({ user, onLogout }) => {
   const navigate = useNavigate();
-  const [posts, setPosts] = useState(mockPosts);
+  const [posts, setPosts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedPost, setSelectedPost] = useState(null);
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState({});
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const storedPosts = localStorage.getItem('posts');
+    if (storedPosts) {
+      setPosts(JSON.parse(storedPosts));
+    } else {
+      localStorage.setItem('posts', JSON.stringify(defaultPosts));
+      setPosts(defaultPosts);
+    }
+
+    const storedComments = localStorage.getItem('comments');
+    if (storedComments) {
+      setComments(JSON.parse(storedComments));
+    }
+  }, []);
+
   const filteredPosts = selectedCategory === 'All'
     ? posts
     : posts.filter(p => p.category === selectedCategory);
 
   const handleSendKindness = (postId) => {
-    setPosts(posts.map(p =>
+    const updatedPosts = posts.map(p =>
       p.id === postId ? { ...p, kindness_count: p.kindness_count + 1 } : p
-    ));
+    );
+    setPosts(updatedPosts);
+    localStorage.setItem('posts', JSON.stringify(updatedPosts));
     toast.success('Kindness sent ❤️');
   };
 
@@ -66,10 +83,13 @@ const FeedPage = ({ user, onLogout }) => {
         created_at: new Date().toISOString(),
       };
       
-      setComments({
+      const updatedComments = {
         ...comments,
         [postId]: [...(comments[postId] || []), newComment],
-      });
+      };
+      
+      setComments(updatedComments);
+      localStorage.setItem('comments', JSON.stringify(updatedComments));
       
       toast.success('Comment posted successfully');
       setCommentText('');
