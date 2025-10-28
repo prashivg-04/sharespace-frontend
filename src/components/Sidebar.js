@@ -1,26 +1,15 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Heart, Home, MessageCircle, BookOpen, TrendingUp, Library, Wind, LogOut } from 'lucide-react';
-import axios from 'axios';
-import { API } from '../App';
 import { toast } from 'sonner';
 
 const Sidebar = ({ user, onLogout }) => {
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    try {
-      await axios.post(`${API}/auth/logout`, {}, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('session_token')}` }
-      });
-      onLogout();
-      toast.success('Logged out successfully');
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      onLogout();
-      navigate('/login');
-    }
+  const handleLogout = () => {
+    onLogout();
+    toast.success('Logged out successfully');
+    navigate('/login');
   };
 
   const menuItems = [
@@ -35,20 +24,19 @@ const Sidebar = ({ user, onLogout }) => {
   return (
     <div className="fixed left-0 top-0 h-screen w-64 bg-white/70 backdrop-blur-sm border-r border-gray-200 shadow-lg">
       <div className="p-6">
-        {/* Logo */}
         <div className="flex items-center space-x-2 mb-8">
           <Heart className="text-green-600" size={32} fill="currentColor" />
           <h1 className="text-2xl font-bold text-gray-800">ShareSpace</h1>
         </div>
 
-        {/* User Info */}
         <div className="mb-8 p-4 bg-green-50 rounded-2xl">
           <p className="text-sm text-gray-600 mb-1">Logged in as</p>
           <p className="font-semibold text-gray-800">{user.name}</p>
-          <p className="text-xs text-gray-500 mt-1">Anonymous ID: {user.anonymous_id}</p>
+          {user.anonymous_id && (
+            <p className="text-xs text-gray-500 mt-1">Anonymous ID: {user.anonymous_id}</p>
+          )}
         </div>
 
-        {/* Menu Items */}
         <nav className="space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -72,7 +60,6 @@ const Sidebar = ({ user, onLogout }) => {
           })}
         </nav>
 
-        {/* Logout Button */}
         <div className="absolute bottom-6 left-6 right-6">
           <Button
             data-testid="logout-btn"
