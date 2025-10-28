@@ -1,6 +1,4 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API } from '../App';
+import { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
@@ -21,25 +19,7 @@ const JournalPage = ({ user, onLogout }) => {
 
   const moodEmojis = ['😊', '😢', '😰', '😔', '😤', '🤗', '💪', '🌟'];
 
-  useEffect(() => {
-    fetchEntries();
-  }, [activeTab]);
-
-  const fetchEntries = async () => {
-    try {
-      const sessionToken = localStorage.getItem('session_token');
-      const url = activeTab === 'all' ? `${API}/journal` : `${API}/journal?entry_type=${activeTab}`;
-      const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${sessionToken}` }
-      });
-      setEntries(response.data);
-    } catch (error) {
-      console.error('Error fetching entries:', error);
-      toast.error('Failed to load journal entries');
-    }
-  };
-
-  const handleCreate = async (e) => {
+  const handleCreate = (e) => {
     e.preventDefault();
     if (!newEntry.title.trim() || !newEntry.content.trim()) {
       toast.error('Please fill in all fields');
@@ -47,36 +27,29 @@ const JournalPage = ({ user, onLogout }) => {
     }
 
     setLoading(true);
-    try {
-      const sessionToken = localStorage.getItem('session_token');
-      await axios.post(`${API}/journal`, newEntry, {
-        headers: { Authorization: `Bearer ${sessionToken}` }
-      });
+    setTimeout(() => {
+      const entry = {
+        id: Date.now(),
+        ...newEntry,
+        created_at: new Date().toISOString(),
+      };
+      setEntries([entry, ...entries]);
       toast.success('Entry saved!');
       setNewEntry({ title: '', content: '', entry_type: 'daily', mood: '😊' });
       setShowCreate(false);
-      fetchEntries();
-    } catch (error) {
-      toast.error('Failed to save entry');
-    } finally {
       setLoading(false);
-    }
+    }, 500);
   };
 
-  const handleDelete = async (entryId) => {
+  const handleDelete = (entryId) => {
     if (!window.confirm('Delete this entry?')) return;
-
-    try {
-      const sessionToken = localStorage.getItem('session_token');
-      await axios.delete(`${API}/journal/${entryId}`, {
-        headers: { Authorization: `Bearer ${sessionToken}` }
-      });
-      toast.success('Entry deleted');
-      fetchEntries();
-    } catch (error) {
-      toast.error('Failed to delete entry');
-    }
+    setEntries(entries.filter(e => e.id !== entryId));
+    toast.success('Entry deleted');
   };
+
+  const filteredEntries = activeTab === 'all'
+    ? entries
+    : entries.filter(e => e.entry_type === activeTab);
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50">
@@ -99,7 +72,6 @@ const JournalPage = ({ user, onLogout }) => {
             </Button>
           </div>
 
-          {/* Create Entry Form */}
           {showCreate && (
             <Card className="p-6 bg-white/70 backdrop-blur-sm border-none shadow-xl mb-8">
               <form onSubmit={handleCreate} className="space-y-4">
@@ -165,7 +137,6 @@ const JournalPage = ({ user, onLogout }) => {
             </Card>
           )}
 
-          {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
             <TabsList className="bg-white/70 backdrop-blur-sm">
               <TabsTrigger value="all" data-testid="tab-all">All Entries</TabsTrigger>
@@ -175,15 +146,14 @@ const JournalPage = ({ user, onLogout }) => {
             </TabsList>
           </Tabs>
 
-          {/* Entries List */}
           <div className="space-y-4">
-            {entries.length === 0 ? (
+            {filteredEntries.length === 0 ? (
               <Card className="p-12 text-center bg-white/70 backdrop-blur-sm border-none shadow-lg">
                 <BookOpen className="mx-auto mb-4 text-gray-400" size={48} />
                 <p className="text-gray-500 text-lg">No entries yet. Start journaling!</p>
               </Card>
             ) : (
-              entries.map((entry) => (
+              filteredEntries.map((entry) => (
                 <Card
                   key={entry.id}
                   data-testid={`entry-${entry.id}`}

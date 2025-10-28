@@ -1,7 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { API } from '../App';
 import Sidebar from '../components/Sidebar';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
@@ -12,93 +10,75 @@ import { Heart, MessageCircle, Plus, Filter } from 'lucide-react';
 
 const categories = ['All', 'Academics', 'Relationships', 'Self-doubt', 'Motivation'];
 
+const mockPosts = [
+  {
+    id: 1,
+    content: 'Feeling stressed about upcoming exams but trying to stay positive. Anyone else in the same boat?',
+    category: 'Academics',
+    mood_emoji: '😰',
+    kindness_count: 12,
+    anonymous_id: 'Anonymous Butterfly',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 2,
+    content: 'Had a great day today! Sometimes the small wins matter most.',
+    category: 'Motivation',
+    mood_emoji: '😊',
+    kindness_count: 8,
+    anonymous_id: 'Anonymous Phoenix',
+    created_at: new Date(Date.now() - 86400000).toISOString(),
+  },
+];
+
 const FeedPage = ({ user, onLogout }) => {
   const navigate = useNavigate();
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState(mockPosts);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedPost, setSelectedPost] = useState(null);
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState({});
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchPosts();
-  }, [selectedCategory]);
+  const filteredPosts = selectedCategory === 'All'
+    ? posts
+    : posts.filter(p => p.category === selectedCategory);
 
-  const fetchPosts = async () => {
-    try {
-      const sessionToken = localStorage.getItem('session_token');
-      const url = selectedCategory === 'All' 
-        ? `${API}/posts`
-        : `${API}/posts?category=${selectedCategory}`;
-      const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${sessionToken}` }
-      });
-      setPosts(response.data);
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-      toast.error('Failed to load posts');
-    }
+  const handleSendKindness = (postId) => {
+    setPosts(posts.map(p =>
+      p.id === postId ? { ...p, kindness_count: p.kindness_count + 1 } : p
+    ));
+    toast.success('Kindness sent ❤️');
   };
 
-  const fetchComments = async (postId) => {
-    try {
-      const sessionToken = localStorage.getItem('session_token');
-      const response = await axios.get(`${API}/posts/${postId}/comments`, {
-        headers: { Authorization: `Bearer ${sessionToken}` }
-      });
-      setComments(prev => ({ ...prev, [postId]: response.data }));
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-    }
-  };
-
-  const handleSendKindness = async (postId) => {
-    try {
-      const sessionToken = localStorage.getItem('session_token');
-      await axios.post(`${API}/posts/${postId}/kindness`, {}, {
-        headers: { Authorization: `Bearer ${sessionToken}` }
-      });
-      toast.success('Kindness sent ❤️');
-      fetchPosts();
-    } catch (error) {
-      toast.error('Failed to send kindness');
-    }
-  };
-
-  const handlePostComment = async (postId) => {
+  const handlePostComment = (postId) => {
     if (!commentText.trim()) {
       toast.error('Please write a comment');
       return;
     }
 
     setLoading(true);
-    try {
-      const sessionToken = localStorage.getItem('session_token');
-      await axios.post(`${API}/posts/${postId}/comments`, {
-        content: commentText
-      }, {
-        headers: { Authorization: `Bearer ${sessionToken}` }
+    setTimeout(() => {
+      const newComment = {
+        id: Date.now(),
+        content: commentText,
+        anonymous_id: 'Anonymous User',
+        created_at: new Date().toISOString(),
+      };
+      
+      setComments({
+        ...comments,
+        [postId]: [...(comments[postId] || []), newComment],
       });
+      
       toast.success('Comment posted successfully');
       setCommentText('');
-      fetchComments(postId);
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to post comment. Please ensure your comment is supportive.');
-    } finally {
       setLoading(false);
-    }
+    }, 500);
   };
 
   const toggleComments = (postId) => {
-    if (selectedPost === postId) {
-      setSelectedPost(null);
-    } else {
-      setSelectedPost(postId);
-      if (!comments[postId]) {
-        fetchComments(postId);
-      }
-    }
+    setSelectedPost(selectedPost === postId ? null : postId);
   };
 
   return (
@@ -107,7 +87,6 @@ const FeedPage = ({ user, onLogout }) => {
       
       <div className="flex-1 p-8 ml-64">
         <div className="max-w-4xl mx-auto">
-          {/* Header */}
           <div className="flex justify-between items-center mb-8">
             <div>
               <h1 className="text-4xl font-bold text-gray-900">Community Feed</h1>
@@ -123,7 +102,6 @@ const FeedPage = ({ user, onLogout }) => {
             </Button>
           </div>
 
-          {/* Filter */}
           <div className="mb-8">
             <div className="flex items-center space-x-2 mb-4">
               <Filter size={20} className="text-gray-600" />
@@ -147,14 +125,13 @@ const FeedPage = ({ user, onLogout }) => {
             </div>
           </div>
 
-          {/* Posts */}
           <div className="space-y-6">
-            {posts.length === 0 ? (
+            {filteredPosts.length === 0 ? (
               <Card className="p-12 text-center bg-white/70 backdrop-blur-sm border-none shadow-lg">
-                <p className="text-gray-500 text-lg">No posts yet. Be the first to share!</p>
+                <p className="text-gray-500 text-lg">No posts in this category yet.</p>
               </Card>
             ) : (
-              posts.map((post) => (
+              filteredPosts.map((post) => (
                 <Card
                   key={post.id}
                   data-testid={`post-${post.id}`}
@@ -199,12 +176,10 @@ const FeedPage = ({ user, onLogout }) => {
                     </Button>
                   </div>
 
-                  {/* Comments Section */}
                   {selectedPost === post.id && (
                     <div className="mt-6 pt-6 border-t border-gray-200" data-testid={`comments-section-${post.id}`}>
                       <h4 className="font-semibold text-gray-800 mb-4">Supportive Comments</h4>
                       
-                      {/* Comment Input */}
                       <div className="mb-4 space-y-2">
                         <Textarea
                           data-testid={`comment-textarea-${post.id}`}
@@ -224,7 +199,6 @@ const FeedPage = ({ user, onLogout }) => {
                         </Button>
                       </div>
 
-                      {/* Comments List */}
                       <div className="space-y-3">
                         {comments[post.id]?.length > 0 ? (
                           comments[post.id].map((comment) => (

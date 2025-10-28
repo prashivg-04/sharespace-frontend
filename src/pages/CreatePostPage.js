@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { API } from '../App';
 import Sidebar from '../components/Sidebar';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
@@ -20,7 +18,7 @@ const CreatePostPage = ({ user, onLogout }) => {
   const [moodEmoji, setMoodEmoji] = useState('😊');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     if (!content.trim()) {
@@ -34,24 +32,11 @@ const CreatePostPage = ({ user, onLogout }) => {
     }
 
     setLoading(true);
-    try {
-      const sessionToken = localStorage.getItem('session_token');
-      await axios.post(`${API}/posts`, {
-        content: content.trim(),
-        category,
-        mood_emoji: moodEmoji
-      }, {
-        headers: { Authorization: `Bearer ${sessionToken}` }
-      });
-      
+    setTimeout(() => {
       toast.success('Post shared successfully!');
       navigate('/feed');
-    } catch (error) {
-      console.error('Error creating post:', error);
-      toast.error('Failed to create post');
-    } finally {
       setLoading(false);
-    }
+    }, 500);
   };
 
   return (

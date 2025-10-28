@@ -1,13 +1,10 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API } from '../App';
+import { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Textarea } from '../components/ui/textarea';
 import { toast } from 'sonner';
 import { TrendingUp, Plus } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 
 const moodOptions = [
   { emoji: '😊', label: 'Happy', color: 'bg-yellow-100 text-yellow-700' },
@@ -27,24 +24,7 @@ const MoodTrackerPage = ({ user, onLogout }) => {
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchEntries();
-  }, []);
-
-  const fetchEntries = async () => {
-    try {
-      const sessionToken = localStorage.getItem('session_token');
-      const response = await axios.get(`${API}/mood?days=30`, {
-        headers: { Authorization: `Bearer ${sessionToken}` }
-      });
-      setEntries(response.data);
-    } catch (error) {
-      console.error('Error fetching mood entries:', error);
-      toast.error('Failed to load mood history');
-    }
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!selectedMood) {
       toast.error('Please select a mood');
@@ -52,27 +32,22 @@ const MoodTrackerPage = ({ user, onLogout }) => {
     }
 
     setLoading(true);
-    try {
-      const sessionToken = localStorage.getItem('session_token');
-      await axios.post(`${API}/mood`, {
+    setTimeout(() => {
+      const newEntry = {
+        id: Date.now(),
         mood: selectedMood,
-        note: note.trim() || undefined
-      }, {
-        headers: { Authorization: `Bearer ${sessionToken}` }
-      });
+        note: note.trim(),
+        created_at: new Date().toISOString(),
+      };
+      setEntries([newEntry, ...entries]);
       toast.success('Mood logged!');
       setSelectedMood('');
       setNote('');
       setShowCreate(false);
-      fetchEntries();
-    } catch (error) {
-      toast.error('Failed to log mood');
-    } finally {
       setLoading(false);
-    }
+    }, 500);
   };
 
-  // Calculate mood distribution
   const getMoodStats = () => {
     const stats = {};
     entries.forEach(entry => {
@@ -104,7 +79,6 @@ const MoodTrackerPage = ({ user, onLogout }) => {
             </Button>
           </div>
 
-          {/* Create Form */}
           {showCreate && (
             <Card className="p-6 bg-white/70 backdrop-blur-sm border-none shadow-xl mb-8">
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -156,10 +130,9 @@ const MoodTrackerPage = ({ user, onLogout }) => {
             </Card>
           )}
 
-          {/* Mood Statistics */}
           {entries.length > 0 && (
             <Card className="p-6 bg-white/70 backdrop-blur-sm border-none shadow-xl mb-8">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">Your Mood Overview (Last 30 Days)</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">Your Mood Overview</h2>
               <div className="grid grid-cols-4 gap-4">
                 {moodOptions.map((mood) => {
                   const count = moodStats[mood.emoji] || 0;
@@ -178,7 +151,6 @@ const MoodTrackerPage = ({ user, onLogout }) => {
             </Card>
           )}
 
-          {/* Mood History */}
           <div>
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">Mood History</h2>
             <div className="space-y-3">
