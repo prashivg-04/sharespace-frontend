@@ -10,6 +10,7 @@ import JournalPage from './pages/JournalPage';
 import MoodTrackerPage from './pages/MoodTrackerPage';
 import ResourcesPage from './pages/ResourcesPage';
 import CalmToolsPage from './pages/CalmToolsPage';
+import ProfilePage from './pages/ProfilePage';
 import { Toaster } from 'sonner';
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
           <Route path="/mood" element={user ? <MoodTrackerPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
           <Route path="/resources" element={user ? <ResourcesPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
           <Route path="/calm" element={user ? <CalmToolsPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
+          <Route path="/profile" element={user ? <ProfilePage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
         </Routes>
       </BrowserRouter>
     </div>

@@ -53,6 +53,7 @@ const CreatePostPage = ({ user, onLogout }) => {
         mood_emoji: moodEmoji,
         kindness_count: 0,
         anonymous_id: getRandomAnonymousName(),
+        user_id: user.id,
         created_at: new Date().toISOString(),
       };
 

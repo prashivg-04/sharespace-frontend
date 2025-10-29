@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
-import { Heart, Home, MessageCircle, BookOpen, TrendingUp, Library, Wind, LogOut } from 'lucide-react';
+import { Heart, Home, MessageCircle, BookOpen, TrendingUp, Library, Wind, LogOut, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Sidebar = ({ user, onLogout }) => {
@@ -19,6 +19,7 @@ const Sidebar = ({ user, onLogout }) => {
     { icon: TrendingUp, label: 'Mood Tracker', path: '/mood' },
     { icon: Library, label: 'Resources', path: '/resources' },
     { icon: Wind, label: 'Calm Tools', path: '/calm' },
+    { icon: User, label: 'Profile', path: '/profile' },
   ];
 
   return (
