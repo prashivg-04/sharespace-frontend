@@ -6,7 +6,7 @@ import { Wind, Play, Pause, Volume2, RefreshCw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 
 const CalmToolsPage = ({ user, onLogout }) => {
-  const [breathingActive, setBreathingActive] = useState(false);
+  const [activeExercise, setActiveExercise] = useState(null);
   const [breathingPhase, setBreathingPhase] = useState('ready');
   const [breathingCount, setBreathingCount] = useState(0);
   const [selectedSound, setSelectedSound] = useState(null);
@@ -41,8 +41,12 @@ const CalmToolsPage = ({ user, onLogout }) => {
     return dailyQuotes[index];
   });
 
-  const startBreathing = (pattern) => {
-    setBreathingActive(true);
+  const startBreathing = (exerciseName, pattern) => {
+    if (breathingIntervalRef.current) {
+      clearInterval(breathingIntervalRef.current);
+    }
+    
+    setActiveExercise(exerciseName);
     setBreathingCount(0);
     let phase = 0;
     const phases = ['Inhale', 'Hold', 'Exhale', 'Hold'].filter((_, i) => pattern[i] > 0);
@@ -60,7 +64,7 @@ const CalmToolsPage = ({ user, onLogout }) => {
   };
 
   const stopBreathing = () => {
-    setBreathingActive(false);
+    setActiveExercise(null);
     setBreathingPhase('ready');
     if (breathingIntervalRef.current) {
       clearInterval(breathingIntervalRef.current);
@@ -117,7 +121,7 @@ const CalmToolsPage = ({ user, onLogout }) => {
                     </span>
                   </div>
                 </div>
-                {breathingActive && (
+                {activeExercise && (
                   <p className="text-lg text-gray-600 mb-4">Cycles completed: {breathingCount}</p>
                 )}
               </Card>
@@ -131,10 +135,10 @@ const CalmToolsPage = ({ user, onLogout }) => {
                     <p className="text-sm text-gray-600 mb-4">{exercise.description}</p>
                     <Button
                       data-testid={`breathing-${exercise.name.toLowerCase().replace(/\s+/g, '-')}`}
-                      onClick={() => breathingActive ? stopBreathing() : startBreathing(exercise.pattern)}
+                      onClick={() => activeExercise === exercise.name ? stopBreathing() : startBreathing(exercise.name, exercise.pattern)}
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full"
                     >
-                      {breathingActive ? (
+                      {activeExercise === exercise.name ? (
                         <><Pause size={18} className="mr-2" /> Stop</>
                       ) : (
                         <><Play size={18} className="mr-2" /> Start</>
