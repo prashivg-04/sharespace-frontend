@@ -1,10 +1,46 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Heart, Home, MessageCircle, BookOpen, TrendingUp, Library, Wind, LogOut, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Sidebar = ({ user, onLogout }) => {
   const navigate = useNavigate();
+
+  const [profileData, setProfileData] = useState(null);
+  const taglines = [
+    'Your safe space for healing.',
+    'Breathe. Reflect. Heal.',
+    "You’re not alone here.",
+    'Progress, not perfection.'
+  ];
+  const [taglineIndex, setTaglineIndex] = useState(0);
+  const [taglineVisible, setTaglineVisible] = useState(true);
+
+  useEffect(() => {
+    const storedProfiles = JSON.parse(localStorage.getItem('userProfiles') || '{}');
+    const profile = storedProfiles[user.id];
+    if (profile) {
+      setProfileData(profile);
+    } else {
+      setProfileData({ name: user.name, imageDataUrl: null });
+    }
+  }, [user.id, user.name]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // fade out
+      setTaglineVisible(false);
+      // after fade-out, switch text and fade in
+      const timeout = setTimeout(() => {
+        setTaglineIndex((prev) => (prev + 1) % taglines.length);
+        setTaglineVisible(true);
+      }, 350);
+      return () => clearTimeout(timeout);
+    }, 7000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogout = () => {
     onLogout();
@@ -19,26 +55,30 @@ const Sidebar = ({ user, onLogout }) => {
     { icon: TrendingUp, label: 'Mood Tracker', path: '/mood' },
     { icon: Library, label: 'Resources', path: '/resources' },
     { icon: Wind, label: 'Calm Tools', path: '/calm' },
-    { icon: User, label: 'Profile', path: '/profile' },
   ];
 
   return (
     <div className="fixed left-0 top-0 h-screen w-64 bg-white/70 backdrop-blur-sm border-r border-gray-200 shadow-lg">
       <div className="p-6">
-        <div className="flex items-center space-x-2 mb-8">
-          <Heart className="text-green-600" size={32} fill="currentColor" />
-          <h1 className="text-2xl font-bold text-gray-800">ShareSpace</h1>
+        <div className="px-4 py-3 mb-4 border-b border-gray-200">
+          <div className="flex flex-col items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-teal-400 flex items-center justify-center shadow-md shadow-green-200/60 mb-2">
+              <Heart className="text-white" size={20} fill="currentColor" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-800 leading-none">ShareSpace</h1>
+            <div className="mt-3 h-10 w-full flex items-center justify-center">
+              <p
+                className={`text-sm text-gray-600 italic transition-opacity duration-500 whitespace-nowrap truncate max-w-full ${
+                  taglineVisible ? 'opacity-100' : 'opacity-0'
+                }`}
+              >
+                {taglines[taglineIndex]}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="mb-8 p-4 bg-green-50 rounded-2xl">
-          <p className="text-sm text-gray-600 mb-1">Logged in as</p>
-          <p className="font-semibold text-gray-800">{user.name}</p>
-          {user.anonymous_id && (
-            <p className="text-xs text-gray-500 mt-1">Anonymous ID: {user.anonymous_id}</p>
-          )}
-        </div>
-
-        <nav className="space-y-2">
+        <nav className="space-y-3 mt-6">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = window.location.pathname === item.path;
@@ -62,6 +102,37 @@ const Sidebar = ({ user, onLogout }) => {
         </nav>
 
         <div className="absolute bottom-6 left-6 right-6">
+          <div className="h-px bg-gray-200/80 mb-4" />
+          {/* Bottom Profile Card */}
+          <button
+            onClick={() => navigate('/profile')}
+            className={`w-full flex flex-col sm:flex-row items-center justify-center sm:justify-start p-3 sm:p-4 rounded-2xl border transition-colors mb-4 ${
+              window.location.pathname === '/profile'
+                ? 'bg-green-100 text-green-700 border-green-200 shadow'
+                : 'bg-green-100 hover:bg-green-200 text-gray-700 border-green-100'
+            }`}
+          >
+            <div className="flex items-center space-x-3 w-full">
+              <Avatar className="h-9 w-9 sm:h-10 sm:w-10 border-2 border-white shadow-sm flex-shrink-0">
+                {profileData?.imageDataUrl ? (
+                  <AvatarImage src={profileData.imageDataUrl} alt={profileData?.name || user.name} />
+                ) : (
+                  <AvatarFallback className="bg-gradient-to-br from-green-400 to-blue-500 text-white text-xs sm:text-sm font-semibold">
+                    {(profileData?.name || user.name || 'U')
+                      .split(' ')
+                      .map(n => n[0])
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <span className="font-medium text-sm truncate block text-center sm:text-left">{profileData?.name || user.name}</span>
+              </div>
+            </div>
+          </button>
+
           <Button
             data-testid="logout-btn"
             onClick={handleLogout}

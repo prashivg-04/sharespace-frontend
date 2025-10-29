@@ -25,7 +25,11 @@ const LoginPage = ({ onLogin }) => {
         email: loginData.email
       };
       onLogin(mockUser);
-      toast.success('Welcome back!');
+      // Show toast only once per session
+      if (sessionStorage.getItem('shownLoginToast') !== 'true') {
+        toast.success(`💚 Welcome back! Take a deep breath—you're in a safe space.`);
+        sessionStorage.setItem('shownLoginToast', 'true');
+      }
       navigate('/dashboard');
       setLoading(false);
     }, 500);
@@ -42,7 +46,11 @@ const LoginPage = ({ onLogin }) => {
         email: signupData.email
       };
       onLogin(mockUser);
-      toast.success('Account created successfully!');
+      // Show toast only once per session
+      if (sessionStorage.getItem('shownSignupToast') !== 'true') {
+        toast.success("🎉 Welcome to ShareSpace! We're so happy you're here. Remember, you're never alone. 🌱");
+        sessionStorage.setItem('shownSignupToast', 'true');
+      }
       navigate('/dashboard');
       setLoading(false);
     }, 500);
