@@ -103,16 +103,16 @@ const CalmToolsPage = ({ user, onLogout }) => {
             <TabsContent value="breathing" className="space-y-6">
               {/* Breathing Visualizer */}
               <Card className="p-12 bg-white/70 backdrop-blur-sm border-none shadow-xl text-center">
-                <div className="mb-8">
+                <div className="mb-8 flex items-center justify-center min-h-[350px] overflow-hidden">
                   <div 
-                    className={`w-48 h-48 mx-auto rounded-full flex items-center justify-center transition-all duration-1000 ${
+                    className={`w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-full flex items-center justify-center transition-all duration-1000 ease-in-out ${
                       breathingPhase === 'Inhale' ? 'scale-150 bg-blue-200' :
                       breathingPhase === 'Hold' ? 'scale-150 bg-purple-200' :
                       breathingPhase === 'Exhale' ? 'scale-100 bg-green-200' :
                       'scale-100 bg-gray-200'
                     }`}
                   >
-                    <span className="text-2xl font-semibold text-gray-700">
+                    <span className="text-xl sm:text-2xl font-semibold text-gray-700">
                       {breathingPhase === 'ready' ? 'Ready' : breathingPhase}
                     </span>
                   </div>
