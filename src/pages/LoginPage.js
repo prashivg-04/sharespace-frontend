@@ -7,6 +7,7 @@ import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { toast } from 'sonner';
 import { Heart, Mail, Lock, User } from 'lucide-react';
+import { apiRequest } from '../lib/api';
 
 const LoginPage = ({ onLogin }) => {
   const navigate = useNavigate();
@@ -14,46 +15,70 @@ const LoginPage = ({ onLogin }) => {
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [signupData, setSignupData] = useState({ email: '', password: '', name: '' });
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
-    setTimeout(() => {
-      const mockUser = {
-        id: '1',
-        name: loginData.email.split('@')[0],
-        email: loginData.email
-      };
-      onLogin(mockUser);
-      // Show toast only once per session
+    try {
+      const data = await apiRequest('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: loginData.email, password: loginData.password })
+      });
+      const { token, user } = data;
+      if (token) {
+        localStorage.setItem('sharespace_token', token);
+      }
+      if (user) {
+        try { localStorage.setItem('sharespace_user', JSON.stringify(user)); } catch {}
+        onLogin(user);
+      }
       if (sessionStorage.getItem('shownLoginToast') !== 'true') {
-        toast.success(`💚 Welcome back! Take a deep breath—you're in a safe space.`);
+        toast.success('💚 Welcome back! Take a deep breath—you\'re in a safe space.');
         sessionStorage.setItem('shownLoginToast', 'true');
       }
       navigate('/dashboard');
+    } catch (err) {
+      toast.error(err?.message || 'Login failed');
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
-    setTimeout(() => {
-      const mockUser = {
-        id: '1',
-        name: signupData.name,
-        email: signupData.email
-      };
-      onLogin(mockUser);
-      // Show toast only once per session
-      if (sessionStorage.getItem('shownSignupToast') !== 'true') {
-        toast.success("🎉 Welcome to ShareSpace! We're so happy you're here. Remember, you're never alone. 🌱");
-        sessionStorage.setItem('shownSignupToast', 'true');
+    try {
+      const signupRes = await apiRequest('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ name: signupData.name, email: signupData.email, password: signupData.password })
+      });
+      // Try to use token from signup; if not present, auto-login
+      let token = signupRes?.token;
+      let user = signupRes?.user;
+
+      if (!token) {
+        const loginRes = await apiRequest('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ email: signupData.email, password: signupData.password })
+        });
+        token = loginRes?.token;
+        user = loginRes?.user;
       }
+
+      if (token) {
+        localStorage.setItem('sharespace_token', token);
+      }
+      if (user) {
+        try { localStorage.setItem('sharespace_user', JSON.stringify(user)); } catch {}
+        onLogin(user);
+      }
+
+      toast.success('🎉 Welcome to ShareSpace!');
       navigate('/dashboard');
+    } catch (err) {
+      toast.error(err?.message || 'Signup failed');
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   if (loading) {

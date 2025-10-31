@@ -4,9 +4,12 @@ import { Button } from './ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Heart, Home, MessageCircle, BookOpen, TrendingUp, Library, Wind, LogOut, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { useUser } from "@/hooks/useUser";
 
-const Sidebar = ({ user, onLogout }) => {
+const Sidebar = ({ onLogout }) => {
   const navigate = useNavigate();
+  const { user } = useUser();
+
 
   const [profileData, setProfileData] = useState(null);
   const taglines = [
@@ -19,14 +22,33 @@ const Sidebar = ({ user, onLogout }) => {
   const [taglineVisible, setTaglineVisible] = useState(true);
 
   useEffect(() => {
-    const storedProfiles = JSON.parse(localStorage.getItem('userProfiles') || '{}');
-    const profile = storedProfiles[user.id];
-    if (profile) {
-      setProfileData(profile);
-    } else {
-      setProfileData({ name: user.name, imageDataUrl: null });
-    }
-  }, [user.id, user.name]);
+    const loadProfileData = () => {
+      try {
+        const savedUser = JSON.parse(localStorage.getItem('sharespace_user'));
+        if (savedUser) {
+          setProfileData({
+            name: savedUser.name,
+            imageDataUrl: savedUser.profilePictureUrl || null,
+          });
+        } else {
+          setProfileData({ name: user.name, imageDataUrl: null });
+        }
+      } catch (err) {
+        console.warn("Error loading user from localStorage", err);
+      }
+    };
+  
+    loadProfileData();
+  
+    // ✅ Listen for localStorage updates from other components
+    const onStorageChange = (e) => {
+      if (e.key === 'sharespace_user') loadProfileData();
+    };
+    window.addEventListener('storage', onStorageChange);
+  
+    return () => window.removeEventListener('storage', onStorageChange);
+  }, [user.name]);
+  
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -114,11 +136,11 @@ const Sidebar = ({ user, onLogout }) => {
           >
             <div className="flex items-center space-x-3 w-full">
               <Avatar className="h-9 w-9 sm:h-10 sm:w-10 border-2 border-white shadow-sm flex-shrink-0">
-                {profileData?.imageDataUrl ? (
-                  <AvatarImage src={profileData.imageDataUrl} alt={profileData?.name || user.name} />
+                {user?.profilePictureUrl ? (
+                  <AvatarImage src={user?.profilePictureUrl} alt={user?.name || 'User'} />
                 ) : (
                   <AvatarFallback className="bg-gradient-to-br from-green-400 to-blue-500 text-white text-xs sm:text-sm font-semibold">
-                    {(profileData?.name || user.name || 'U')
+                    {(user?.name || 'U')
                       .split(' ')
                       .map(n => n[0])
                       .join('')
@@ -128,7 +150,7 @@ const Sidebar = ({ user, onLogout }) => {
                 )}
               </Avatar>
               <div className="flex-1 min-w-0">
-                <span className="font-medium text-sm truncate block text-center sm:text-left">{profileData?.name || user.name}</span>
+                <span className="font-medium text-sm truncate block text-center sm:text-left">{user?.name || 'User'}</span>
               </div>
             </div>
           </button>

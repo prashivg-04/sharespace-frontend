@@ -22,7 +22,11 @@ const Dashboard = ({ user, onLogout }) => {
           {/* Welcome Section */}
           <div className="mb-12">
             <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              Welcome back, {user.name.split(' ')[0]} 🌿
+              {(() => {
+                const base = (user && (user.name || user.email)) || 'Friend';
+                const first = typeof base === 'string' ? base.split(' ')[0] : 'Friend';
+                return `Welcome back, ${first} 🌿`;
+              })()}
             </h1>
             <p className="text-gray-600">Your safe space for healing and growth</p>
           </div>

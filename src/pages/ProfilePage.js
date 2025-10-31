@@ -16,6 +16,8 @@ import {
 } from '../components/ui/dialog';
 import { Heart, MessageCircle, Edit2, Calendar, User, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { apiRequest } from '../lib/api';
+import { useUser } from "@/hooks/useUser";
 
 const ProfilePage = ({ user, onLogout }) => {
   const [posts, setPosts] = useState([]);
@@ -29,27 +31,36 @@ const ProfilePage = ({ user, onLogout }) => {
   });
   const [errors, setErrors] = useState({});
   const [previewImage, setPreviewImage] = useState(null);
+  const { setUser } = useUser();
+
 
   useEffect(() => {
     loadProfile();
     loadPosts();
   }, [user.id, user.name]);
 
-  const loadProfile = () => {
-    const storedProfiles = JSON.parse(localStorage.getItem('userProfiles') || '{}');
-    if (!storedProfiles[user.id]) {
-      const newProfile = {
-        userId: user.id,
-        name: user.name,
-        bio: 'A member of the ShareSpace community 🌟',
-        joinDate: new Date().toISOString(),
-        profilePicture: null,
-      };
-      storedProfiles[user.id] = newProfile;
-      localStorage.setItem('userProfiles', JSON.stringify(storedProfiles));
-      setProfile(newProfile);
-    } else {
-      setProfile(storedProfiles[user.id]);
+  const loadProfile = async () => {
+    try {
+      const token = localStorage.getItem('sharespace_token');
+      if (!token) return;
+      const res = await apiRequest('/users/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const me = res?.user;
+      if (me) {
+        // Debug
+        console.log('Loaded profile', me);
+        setProfile({
+          userId: me.id,
+          name: me.name,
+          bio: me.bio || 'A member of the ShareSpace community 🌟',
+          joinDate: me.createdAt,
+          profilePicture: me.profilePictureUrl,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load profile', err);
+      toast.error(err?.message || 'Failed to load profile');
     }
   };
 
@@ -125,26 +136,63 @@ const ProfilePage = ({ user, onLogout }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     if (!validateForm()) {
       toast.error('Please fix the errors before saving');
       return;
     }
+  
+    try {
+      const token = localStorage.getItem('sharespace_token');
+      const payload = {
+        name: editForm.name.trim(),
+        bio: editForm.bio.trim() || 'A member of the ShareSpace community 🌟',
+        profilePictureUrl: editForm.profilePicture,
+      };
+  
+      console.log('Updating profile payload', payload);
+  
+      const res = await apiRequest('/users/me', {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+  
+      if (res?.user) {
+        console.log('Update success', res.user);
+  
+        // Update current state instantly
+        setProfile({
+          userId: res.user.id,
+          name: res.user.name,
+          bio: res.user.bio,
+          joinDate: res.user.createdAt,
+          profilePicture: res.user.profilePictureUrl,
+        });
+  
+        // Update localStorage
+        localStorage.setItem('sharespace_user', JSON.stringify(res.user));
+        window.dispatchEvent(new Event('storage'));
+  
+        toast.success('Profile updated successfully! 🎉');
+      }
 
-    const storedProfiles = JSON.parse(localStorage.getItem('userProfiles') || '{}');
-    const updatedProfile = {
-      ...profile,
-      name: editForm.name.trim(),
-      bio: editForm.bio.trim() || 'A member of the ShareSpace community 🌟',
-      profilePicture: editForm.profilePicture,
-    };
+      setUser(res.user);
+  
+      setIsEditModalOpen(false);
+  
+      // ✅ Refresh profile section using your existing function
+      await loadProfile();
+    } catch (err) {
+      console.error('Update failed', err);
+      toast.error(err?.message || 'Failed to update profile');
+    }
+  };  
 
-    storedProfiles[user.id] = updatedProfile;
-    localStorage.setItem('userProfiles', JSON.stringify(storedProfiles));
-    setProfile(updatedProfile);
-    setIsEditModalOpen(false);
-    toast.success('Profile updated successfully! 🎉');
-  };
+  
 
   if (!profile) {
     return (
