@@ -1,7 +1,7 @@
 export function getApiBaseUrl() {
   // CRA style env var only; fallback to localhost:5000
   const fromCRA = process.env.REACT_APP_API_BASE_URL;
-  return fromCRA || 'http://localhost:5001/api';
+  return fromCRA || 'https://sharespace-backend-hqaa.onrender.com/api';
 }
 
 export async function apiRequest(path, options = {}) {
